@@ -3,6 +3,7 @@ defmodule BouffebotWeb.UserController do
 
   alias Bouffebot.Accounts
   alias Bouffebot.Accounts.User
+  alias Bouffebot.Guardian
 
   action_fallback BouffebotWeb.FallbackController
 
@@ -12,18 +13,20 @@ defmodule BouffebotWeb.UserController do
   end
 
   def create(conn, %{"user" => user_params}) do
-    with {:ok, %User{} = user} <- Accounts.create_user(user_params) do
-      conn
-      |> put_status(:created)
-      |> put_resp_header("location", Routes.user_path(conn, :show, user))
-      |> render("show.json", user: user)
+    with {:ok, %User{} = user} <- Accounts.create_user(user_params),
+         {:ok, token, _claims} <- Guardian.encode_and_sign(user) do
+      conn |> render("jwt.json", jwt: token)
     end
   end
 
-  def show(conn, %{"id" => id}) do
-    user = Accounts.get_user!(id)
-    render(conn, "show.json", user: user)
+  def sign_in(conn, %{"email" => email, "password" => password}) do
+    case Accounts.token_sign_in(email, password) do
+      {:ok, token, _claims} -> render(conn, "jwt.json", jwt: token)
+      _ -> {:error, :unauthorized}
+    end
   end
+
+  def show(conn, _), do: render(conn, "user.json", user: Guardian.Plug.current_resource(conn))
 
   def update(conn, %{"id" => id, "user" => user_params}) do
     user = Accounts.get_user!(id)

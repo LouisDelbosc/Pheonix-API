@@ -17,6 +17,10 @@ config :bouffebot, BouffebotWeb.Endpoint,
   render_errors: [view: BouffebotWeb.ErrorView, accepts: ~w(json)],
   pubsub: [name: Bouffebot.PubSub, adapter: Phoenix.PubSub.PG2]
 
+config :bouffebot, Bouffebot.Guardian,
+  issuer: "bouffebot",
+  secret_key: "secret key"
+
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
